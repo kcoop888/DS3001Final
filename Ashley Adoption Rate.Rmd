@@ -1,6 +1,6 @@
 ---
 title: "Ashley Adoption Rate"
-author: "Kevin Cooper (kac4bh)"
+author: "Ashley"
 date: "4/28/2022"
 output: html_document
 ---
