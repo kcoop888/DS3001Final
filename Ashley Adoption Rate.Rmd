@@ -1,6 +1,11 @@
 ---
+<<<<<<< HEAD
 title: "Pet Adoption Rate"
 author: "Ashley Kim"
+=======
+title: "Ashley Adoption Rate"
+author: "Ashley"
+>>>>>>> 9276a37a2982ef969f2c48c330d5338eb4958c5c
 date: "4/28/2022"
 output: html_document
 ---
