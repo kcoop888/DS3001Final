@@ -3,28 +3,38 @@ title: "Ashley Adoption Rate"
 author: "Ashley"
 date: "4/28/2022"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+library(caret)
+library(tidyverse)
+library(class)
+library(plotly)
+library(mice)
+library(MLmetrics)
+library(mltools)
+library(data.table)
 ```
 
-## Including Plots
+```{r}
+shelter_data <-  read_csv("/Users/ashleykim/Documents/Y3 2021-2022/DS3001Final/animal-shelter-intakes-and-outcomes.csv")
 
-You can also embed plots, for example:
+mice::md.pattern(shelter_data)
+str(shelter_data)
+table(shelter_data$`Outcome Subtype`)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+shelter_data<- na.omit(shelter_data)
+mice::md.pattern(shelter_data)
+#DOB
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+shelter_data2 <- read_csv("/Users/ashleykim/Documents/Y3 2021-2022/DS3001Final/aac_outcomes.csv")
+```
+
