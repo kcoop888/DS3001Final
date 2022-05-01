@@ -39,7 +39,7 @@ shelter_data <-  read_csv("/Users/ashleykim/Documents/Y3 2021-2022/DS3001Final/a
 (column_index <- tibble(colnames(shelter_data)))
 
 mice::md.pattern(shelter_data)
-shelter_data <- shelter_data[,-c(2,5,7,13,15,18,19,20)] # dropping animal name, secondary color, reason for intake, 
+shelter_data <- shelter_data[,-c(1,2,5,7,9,12,13,14,15,18,19,20)] # dropping animal name, secondary color, reason for intake, 
                                                         # DOB, crossing, outcome sub type, outcome is dead, intake is dead (none of them were dead)
 
 str(shelter_data)
@@ -87,7 +87,8 @@ shelter_data$`Intake Type` <- fct_collapse(shelter_data$`Intake Type`,
                            Owner_Surrender = c("OWNER SURRENDER"),
                            Stray = c("STRAY"),
                            Wildlife = c("WILDLIFE"),
-                           Other = c("CONFISCATE", "Euthenasia Required", "FOSTER", "RETURN", "SAFE KEEP", "WELFARE SEIZED"))
+                           Other = c("CONFISCATE", "Euthenasia Required", "FOSTER", "RETURN", "SAFE KEEP", "WELFARE SEIZED", "Adopted Animal Return",
+                                     "QUARANTINE", "TRAP, NEUTER, RETURN"))
  
 shelter_data$`Jurisdiction` <- fct_collapse(shelter_data$`Jurisdiction`, 
                            LA = c("LA CITY", "LA COUNTY", "SIGNAL HILL", "TORRANCE AC"),
@@ -113,7 +114,7 @@ abc <- names(select_if(shelter_data, is.numeric))
 
 shelter_data[abc] <- lapply(shelter_data[abc], normalize)
 
-shelter_data[,c(4)] <- lapply(shelter_data[,c(4)], as.factor) # converting characters to factors
+shelter_data[,c(3)] <- lapply(shelter_data[,c(3)], as.factor) # converting characters to factors
 ```
 
 ```{r}
@@ -121,7 +122,7 @@ shelter_data[,c(4)] <- lapply(shelter_data[,c(4)], as.factor) # converting chara
 ab_c <- names(select_if(shelter_data, is.factor))
 shelter_data <- one_hot(as.data.table(shelter_data),cols=ab_c,sparsifyNAs = TRUE,naCols = FALSE,dropCols = TRUE,dropUnusedLevels = TRUE)
 
-shelter_data<- shelter_data[,-c(1,6,9,10)] # dropping name, intake + outtake date, intake sub type
+shelter_data <- shelter_data[,-27]
 ```
 
 ## Methods
