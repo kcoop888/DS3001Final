@@ -32,28 +32,6 @@ library(rattle)
 library(mlbench)
 ```
 
-
-```{r}
-date_data <-  read_csv("/Users/ashleykim/Documents/Y3 2021-2022/DS3001Final/animal-shelter-intakes-and-outcomes.csv")
-
-date_data <- date_data[,-c(1,2,5,7,12,13,15,18,19,20)] 
-
-date_data<- na.omit(date_data)
-
-date_data <-  date_data[,c(5,8)]
-```
-
-```{r}
-date_data[,c(1,2)] <- lapply(date_data[,c(1,2)], as.Date)
-
-dates <- data.frame(date_data$`Outcome Date` - date_data$`Intake Date`)
-#table(dates$date_data..Outcome.Date....date_data..Intake.Date.)
-
-dates <- data.frame(as.numeric(difftime(date_data$`Outcome Date`, date_data$`Intake Date`, units = "days")))
-colnames(dates) <- c("days_in_shelter")
-```
-
-
 ## Questions 
 
 How might we promote happiness with pet ownership? What factors impact the adoption of a pet, and likewise, what factors impact an animal not getting adopted?
@@ -71,12 +49,13 @@ shelter_data <-  read_csv("/Users/ashleykim/Documents/Y3 2021-2022/DS3001Final/a
 (column_index <- tibble(colnames(shelter_data)))
 
 mice::md.pattern(shelter_data)
-shelter_data <- shelter_data[,-c(1,2,5,7,9,12,13,14,15,18,19,20)] # dropping animal name, secondary color, reason for intake, 
-                                                        # DOB, crossing, outcome sub type, outcome is dead, intake is dead (none of them were dead)
+shelter_data <- shelter_data[,-c(1,2,5,7,12,13,15,18,19,20,21)] 
+shelter_data<- na.omit(shelter_data)
+
+shelter_data$days_in_shelter <- as.numeric(difftime(date_data$`Outcome Date`, date_data$`Intake Date`, units = "days"))
 
 str(shelter_data)
 
-shelter_data<- na.omit(shelter_data)
 mice::md.pattern(shelter_data)
 ```
 
