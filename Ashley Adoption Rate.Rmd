@@ -22,7 +22,13 @@ library(mltools)
 library(data.table)
 ```
 
-Pets have been proven to have a positive effect on human happiness and mental health. By exploring adoption rates of pets we hope to find ways to promote happiness with pet ownership.
+## Questions 
+
+How might we promote happiness with pet ownership? What factors impact the adoption of a pet, and likewise, what factors impact an animal not getting adopted?
+
+## Background Information
+
+Pets have been proven to have a positive effect on human happiness and mental health. By exploring adoption rates of pets we hope to find ways to promote happiness with pet ownership, as well as discovering what characteristics of an animal (age, color, intake condition, etc.) affect whether it'll be adopted or not using animal shelter data from Long Beach, California.
 
 ## Exploratory Data Analysis
 
@@ -33,10 +39,9 @@ shelter_data <-  read_csv("/Users/ashleykim/Documents/Y3 2021-2022/DS3001Final/a
 (column_index <- tibble(colnames(shelter_data)))
 
 mice::md.pattern(shelter_data)
-shelter_data <- shelter_data[,-c(2,5,7,13,15,18,19,20)] # dropping animal name, secondary color, reason for intake, 
+shelter_data <- shelter_data[,-c(1,2,5,7,9,12,13,14,15,18,19,20)] # dropping animal name, secondary color, reason for intake, 
                                                         # DOB, crossing, outcome sub type, outcome is dead, intake is dead (none of them were dead)
 
-# DROP COLUMN 9 SECOND TIME YOU RUN
 str(shelter_data)
 
 shelter_data<- na.omit(shelter_data)
@@ -50,7 +55,7 @@ table(shelter_data$`Sex`)
 table(shelter_data$`Intake Condition`) # normal, injured, ill, behavior, other
 table(shelter_data$`Intake Type`) # owner surrender, stray, wildlife, other
 table(shelter_data$`Jurisdiction`) # LA, Long Beach, Orange County, Other
-table(shelter_data$`Outcome Type`) # adopted, not adopted
+table(shelter_data$`Outcome Type`) # adopted/rescued, not adopted
 ```
 
 ```{r}
@@ -82,7 +87,8 @@ shelter_data$`Intake Type` <- fct_collapse(shelter_data$`Intake Type`,
                            Owner_Surrender = c("OWNER SURRENDER"),
                            Stray = c("STRAY"),
                            Wildlife = c("WILDLIFE"),
-                           Other = c("CONFISCATE", "Euthenasia Required", "FOSTER", "RETURN", "SAFE KEEP", "WELFARE SEIZED"))
+                           Other = c("CONFISCATE", "Euthenasia Required", "FOSTER", "RETURN", "SAFE KEEP", "WELFARE SEIZED", "Adopted Animal Return",
+                                     "QUARANTINE", "TRAP, NEUTER, RETURN"))
  
 shelter_data$`Jurisdiction` <- fct_collapse(shelter_data$`Jurisdiction`, 
                            LA = c("LA CITY", "LA COUNTY", "SIGNAL HILL", "TORRANCE AC"),
@@ -108,7 +114,7 @@ abc <- names(select_if(shelter_data, is.numeric))
 
 shelter_data[abc] <- lapply(shelter_data[abc], normalize)
 
-shelter_data[,c(4)] <- lapply(shelter_data[,c(4)], as.factor) # converting characters to factors
+shelter_data[,c(3)] <- lapply(shelter_data[,c(3)], as.factor) # converting characters to factors
 ```
 
 ```{r}
@@ -116,9 +122,16 @@ shelter_data[,c(4)] <- lapply(shelter_data[,c(4)], as.factor) # converting chara
 ab_c <- names(select_if(shelter_data, is.factor))
 shelter_data <- one_hot(as.data.table(shelter_data),cols=ab_c,sparsifyNAs = TRUE,naCols = FALSE,dropCols = TRUE,dropUnusedLevels = TRUE)
 
-shelter_data<- shelter_data[,-c(1,15,24)] # dropping name, intake + outtake date
+shelter_data <- shelter_data[,-27]
 ```
 
+## Methods
+
+Using KNN and decision trees
+
+Advantages of using KNN
+- easy to interpret and naturally handles multiclass datasets 
+- non-parametric
 ```{r}
 # Running kNN algorithm 
 table(shelter_data$`Outcome Type_Adopted_Rescued`)[2]/sum(shelter_data$`Outcome Type_Adopted_Rescued`)
@@ -176,9 +189,7 @@ kNN_res = table(shelter_9NN,
 kNN_res
 sum(kNN_res)  #<- the total is all the test examples
 
-#Accuracy = TP+TN/(TP+TN+FP+FN)
-
-(2082+3154)/(2082+3154+0+0)
+(2082+3154)/(2082+3154+0+0) # accuracy = TP+TN/(TP+TN+FP+FN)
 
 kNN_res[row(kNN_res) == col(kNN_res)] # selecting true positives and true negatives 
 
@@ -191,9 +202,12 @@ confusionMatrix(as.factor(shelter_9NN), as.factor(tune$`Outcome Type_Adopted_Res
 
 #sensitivity, recall and true poss rate = TP/TP+FN
 #specificity, true negative rate = TN/TN+FP
-
-#So our ability to "predict" sign up customers has more than doubled to 91% so that's  really solid. This means that out of 10 sign ups,  classify 9 correctly! Which is why in this case we would want to tune this model on TPR (Sensitivity), to get it has high as possible while sacrificing Specificity.  Similar to a medical diagnosis example, where we would rather produce false positives as compared to false negatives, predict more of those with cancer that don't have it as compared to missing anyone that actually has cancer.      
-
-#Reference for confusion matrix: https://www.rdocumentation.org/packages/caret/versions/6.0-86/topics/confusionMatrix 
 ```
 
+## Evaluation of our model
+
+## Conclusions
+
+## Future work
+- maybe more quantitive variables?
+- overfitting (at least on my end)
