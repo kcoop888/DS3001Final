@@ -42,6 +42,10 @@ Pets have been proven to have a positive effect on human happiness and mental he
 
 ## Exploratory Data Analysis
 
+```{r}
+
+```
+
 ## Cleaning Dataset
 
 ```{r}
@@ -57,6 +61,58 @@ shelter_data$days_in_shelter <- as.numeric(difftime(date_data$`Outcome Date`, da
 str(shelter_data)
 
 mice::md.pattern(shelter_data)
+```
+
+
+### RESCUE VS NOT ADOPTED
+```{r}
+rescue_data <-shelter_data[!(shelter_data$`Outcome Type` == "ADOPTION" | shelter_data$`Outcome Type` =="FOSTER TO ADOPT"),]
+
+rescue_data$`Outcome Type` <- fct_collapse(rescue_data$`Outcome Type`, 
+                           Rescued = c("RESCUE"),
+                           Not_Adopted = c("COMMUNITY CAT", "DIED", "DISPOSAL", "DUPLICATE", "EUTHANASIA", "FOSTER", "MISSING", "RETURN TO OWNER", 
+                                  "RETURN TO RESCUE", "RETURN TO WILD HABITAT", "SHELTER, NEUTER, RETURN", "TRANSFER", "TRANSPORT", 
+                                  "TRAP, NEUTER, RELEASE"))
+
+rescue_data$`Animal Type` <- fct_collapse(rescue_data$`Animal Type`, 
+                           Other = c("BIRD", "GUINEA PIG", "LIVESTOCK", "OTHER", "RABBIT", "REPTILE", "WILD"),
+                           Cat = c("CAT"),
+                           Dog = c("DOG"))
+
+rescue_data$`Primary Color` <- fct_collapse(rescue_data$`Primary Color`, 
+                           Other = c("APRICOT", "BC LYNX PT", "BL BRINDLE", "BL LYNX PT", "BLONDE", "BLUE","BLUE BRIND", "BLUE CREAM", "BLUE MERLE",
+                                     "BLUE PT", "BLUE TABBY", "BLUE TICK", "BUFF", "C-T PT", "CALICO", "CALICO DIL", "CALICO PT", "CALICO TAB", 
+                                     "CR LYNX PT", "CREAM", "CREAM PT", "CRM TABBY", "CRM TIGER", "DAPPLE", "FAWN", "FLAME PT", "GOLD", "GREEN",
+                                     "L-C PT", "LC LYNX PT", "LI LYNX PT", "LILAC PT", "LIVER", "LIVER TICK", "LYNX PT", "ORANGE", "ORG TABBY", 
+                                     "ORG TIGER", "PEACH", "PINK", "RD LYNX PT", "RED", "RED MERLE", "RUDDY", "S-T PT", "SABLE", "SEAL", "SEAL PT",
+                                     "SILVER", "SL LYNX PT", "SLVR TABBY", "SNOWSHOE", "ST LYNX PT", "TORBI", "TORTIE", "TORTIE DIL", "TORTIE MUT",
+                                     "TORTIE PT", "TRICOLOR", "UNKNOWN", "WHEAT", "Y BRINDLE", "YELLOW"),
+                           Black = c("BLACK","BLK SMOKE", "BLK TABBY", "BLK TIGER"),
+                           Brown_Tan = c("BR BRINDLE", "BRN MERLE", "BRN TABBY", "BRN TIGER", "BROWN", "CHOC PT", "CHOCOLATE", "SEAL", "SEAL PT",
+                                         "TAN"),
+                           Gray_White = c("GRAY", "GRAY TABBY", "GRAY TIGER", "WHITE"))
+ 
+rescue_data$`Intake Condition` <- fct_collapse(rescue_data$`Intake Condition`, 
+                           Other = c("AGED", "UNDER AGE/WEIGHT", "LIVESTOCK", "OTHER", "RABBIT", "REPTILE", "WILD", "WELFARE SEIZURES"),
+                           Behavior = c("BEHAVIOR  MILD", "BEHAVIOR  MODERATE", "BEHAVIOR  SEVERE", "FERAL", "FRACTIOUS"),
+                           Ill_Injured = c("ILL MILD", "ILL MODERATETE", "ILL SEVERE", "INJURED  MILD", "INJURED  MODERATE", "INJURED  SEVERE"),
+                           Normal = c("NORMAL"))
+
+rescue_data$`Intake Type` <- fct_collapse(rescue_data$`Intake Type`, 
+                           Owner_Surrender = c("OWNER SURRENDER"),
+                           Stray = c("STRAY"),
+                           Wildlife = c("WILDLIFE"),
+                           Other = c("CONFISCATE", "Euthenasia Required", "FOSTER", "RETURN", "SAFE KEEP", "WELFARE SEIZED", "Adopted Animal Return",
+                                     "QUARANTINE", "TRAP, NEUTER, RETURN"))
+ 
+rescue_data$`Jurisdiction` <- fct_collapse(rescue_data$`Jurisdiction`, 
+                           LA = c("LA CITY", "LA COUNTY", "SIGNAL HILL", "TORRANCE AC"),
+                           OC = c("ORANGE CNTY", "SEAL BEACH", "CERRITOS", "IRVINE", "GARDEN GROVE", "LA HABRA", "LOS ALAMITOS", "SEAACA", 
+                                  "WESTMINSTER"),
+                           LB= c("LONG BEACH", "DISTRICT1", "DISTRICT2", "DISTRICT3", "DISTRICT4", "DISTRICT5", "DISTRICT6", "DISTRICT7", "DISTRICT8",
+                                 "DISTRICT9"),
+                           OOA = c("OUT OF AREA"))
+
 ```
 
 ```{r}
@@ -110,11 +166,18 @@ shelter_data$`Jurisdiction` <- fct_collapse(shelter_data$`Jurisdiction`,
                            OOA = c("OUT OF AREA"))
 
 shelter_data$`Outcome Type` <- fct_collapse(shelter_data$`Outcome Type`, 
-                           Adopted_Rescued = c("ADOPTION", "FOSTER TO ADOPT", "RESCUE"),
+                           Adopted = c("ADOPTION", "FOSTER TO ADOPT"),
                            Not_Adopted = c("COMMUNITY CAT", "DIED", "DISPOSAL", "DUPLICATE", "EUTHANASIA", "FOSTER", "MISSING", "RETURN TO OWNER", 
                                   "RETURN TO RESCUE", "RETURN TO WILD HABITAT", "SHELTER, NEUTER, RETURN", "TRANSFER", "TRANSPORT", 
-                                  "TRAP, NEUTER, RELEASE"))
+                                  "TRAP, NEUTER, RELEASE", "RESCUE"))
+
+# 
 ```
+
+
+# drop 
+rescued vs not adopted
+select if shelter outcome is adopted
 
 ```{r}
 shelter_data[,c(3)] <- lapply(shelter_data[,c(3)], as.factor) # converting characters to factors
@@ -177,7 +240,7 @@ dim(test)
 # training the classifier for k = 9 
 
 set.seed(1984) # for randomized algorithm
-shelter_9NN <-  knn(train = train,#<- training set cases
+shelter_9NN <- knn(train = train,#<- training set cases
                test = tune,    #<- tune set cases
                cl = train$`Outcome Type_Adopted_Rescued`,#<- category for true classification
                k = 9,#<- number of neighbors considered
@@ -217,9 +280,9 @@ confusionMatrix(as.factor(shelter_9NN), as.factor(tune$`Outcome Type_Adopted_Res
 #specificity, true negative rate = TN/TN+FP
 ```
 
-### Decision Trees
+### Decision Tree - Adoption
 ```{r}
-shelter_data <- shelter_data[,-9]
+shelter_data <- shelter_data[,-c(5,8)]
 
 prevalence <- 1-table(shelter_data$`Outcome Type`)[[1]]/length(shelter_data$`Outcome Type`)  # calculate the proportion of salary that is the positive class 
 prevalence
@@ -287,6 +350,72 @@ rpart.plot(shelter_mdl$finalModel, type=4,extra=101)
 shelter_mdl$results
 ```
 
+### Decision Tree - Rescue
+```{r}
+rescue_data <- rescue_data[,-c(5,8)]
+
+prevalence <- 1-table(rescue_data$`Outcome Type`)[[1]]/length(rescue_data$`Outcome Type`)  
+prevalence
+```
+
+```{r}
+set.seed(1)
+part_index_1 <- caret::createDataPartition(rescue_data$`Outcome Type`,  # split the data with a .7 probability so that 70% of the data is chosen
+                                           times=1,
+                                           p = 0.70,
+                                           groups=1,
+                                           list=FALSE)
+
+train <- rescue_data[part_index_1, ]  # subset the 70% chosen in the first partition into the train set
+tune_and_test <- rescue_data[-part_index_1, ]  # subset the remaining 7 in a tune and test set 
+
+set.seed(1)
+tune_and_test_index <- createDataPartition(tune_and_test$`Outcome Type`,  # now split the tune and test set 50-50
+                                           p = .5,
+                                           list = FALSE,
+                                           times = 1)
+
+tune <- tune_and_test[tune_and_test_index, ]  # subset the 50% chosen into the tune set
+test <- tune_and_test[-tune_and_test_index, ]  # subset the remaining 50% into the test set
+
+dim(train)
+dim(tune)
+dim(test)
+```
+
+```{r}
+features <- train[,c(-8)] # dropping outcome type column to get just the explanatory variables in features
+target <- train$`Outcome Type`  
+
+
+fitControl <- trainControl(method = "repeatedcv",  # use repeated cross validation with 5 folds and 3 repeats
+                          number = 5,
+                          repeats = 3, 
+                          returnResamp="all",
+                          classProbs = TRUE,
+                          allowParallel = TRUE) 
+
+tree.grid <- expand.grid(maxdepth=c(5,7,9,11))
+
+set.seed(1984)  # set seed for reproducibility
+rescue_mdl <- train(x=features,
+                y=target,
+                method="rpart2",#type of model uses maxdepth to select a model
+                trControl=fitControl,#previously created
+                tuneGrid=tree.grid,#expanded grid
+                metric="ROC")#selected on of the metrics available from two variable summary.
+
+rescue_mdl
+
+plot(rescue_mdl)
+varImp(rescue_mdl)
+```
+
+```{r}
+rpart.plot(rescue_mdl$finalModel, type=4,extra=101)
+rescue_mdl$results
+```
+
 ## Evaluation of our model
 
 - adopted animals tend to be younger, owner-surrendered (not strays) and of the cat/dog variety
@@ -300,5 +429,6 @@ Shelters should focus on promoting animals in their shelters that are typically 
 Our main priority for this exploration is to see which factors contribute the most to an animal not being adopted in order to use this data to promote more instances of adoptions in shelters. This can be done through the shelter marketing older animals that are typically strays and with health issues more frequently. But a select quota of pets that hold a bunch of these "unadoptable" characteristics  may continue to not be adopted at all despite a higher amount of promotion. However, there are different ways to handle these animals without them going to a home. Other opportunities for these animals lie in rescues, animal sanctuaries, and more. By doing this, it can help human society in a different way by people coming through and visiting and also the opportunity to help these animals through volunteer work as well.
 
 ## Future work
-- maybe more quantitative variables?
+- maybe more quantitative variables? were limited to only several methods, wanted to try clustering but didn't have enough quantitative variables (i.e. weight)
+
 - possibility  of overfitting  with KNN(at least on my end)
