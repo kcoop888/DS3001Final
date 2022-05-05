@@ -1,9 +1,12 @@
 
 ---
-title: "Kevin Adoption Rate"
-author: "Kevin Cooper (kac4bh)"
-date: "4/28/2022"
-output: html_document
+title: "Animal Adoption Rate"
+author: "Ashley Kim, Gwen Powers, Kevin Cooper"
+output:
+  html_document: 
+    toc: TRUE
+    theme: simplex
+    toc_float: TRUE
 editor_options: 
   chunk_output_type: console
 ---
@@ -11,10 +14,10 @@ editor_options:
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = 'center')
 ```
 
-```{r}
+```{r, include=FALSE}
 library(caret)
 library(tidyverse)
 library(class)
@@ -33,39 +36,43 @@ library(pROC)
 library(rpart.plot)
 library(rattle)
 library(mlbench)
+
+library(htmltools)
+library(knitr)
+
 ```
 
-## Questions 
+## Overarching Question 
 
-How might we promote happiness with pet ownership? What factors impact the adoption of a pet, and likewise, what factors impact an animal not getting adopted?
+How might we promote happiness with pet ownership? What factors impact the adoption of a pet, and likewise, what factors influence an animal not getting adopted?
 
 ## Background Information
 
-Pets have been proven to have a positive effect on human happiness and mental health. By exploring adoption rates of pets we hope to find ways to promote happiness with pet ownership, as well as discovering what characteristics of an animal (age, color, intake condition, etc.) affect whether it'll be adopted or not using animal shelter data from Long Beach, California.
+Pets have been proven to affect human happiness and mental health positively. By exploring adoption rates of pets, we hope to find ways to promote happiness with pet ownership and discover what characteristics of an animal (age, color, intake condition, etc.) affect whether it'll be adopted. We are using animal shelter data from Long Beach, California.
 
-## Exploratory Data Analysis
+## Cleaning Dataset{.tabset}
 
-```{r}
-
-```
-
-## Cleaning Dataset
-
-```{r}
+```{r eval=TRUE,echo=TRUE, fig.height=2}
 shelter_data <- read.csv("C:/Users/kcoop/Desktop/CS/Data Science/3001/DS3001Final/animal-shelter-intakes-and-outcomes.csv")
-(column_index <- tibble(colnames(shelter_data)))
+column_index <- tibble(colnames(shelter_data))
+str(shelter_data)
 
-# mice::md.pattern(shelter_data)
+
+mice::md.pattern(shelter_data)
 shelter_data <- shelter_data[,-c(1,2,5,7,12,13,15,18,19,20,21)] 
 shelter_data[shelter_data == ""] <- NA
 shelter_data<- na.omit(shelter_data)
 
 shelter_data$days_in_shelter <- as.numeric(difftime(shelter_data$Outcome.Date, shelter_data$Intake.Date, units = "days"))
 
+shelter_data <-shelter_data[,-c(5,8)]
 
 str(shelter_data)
 
-# mice::md.pattern(shelter_data)
+mice::md.pattern(shelter_data)
+
+# rescued vs not adopted
+# select if shelter outcome is adopted
 
 rescue_data <- subset(shelter_data, (Outcome.Type != "ADOPTION") & (Outcome.Type != "FOSTER TO ADOPT"))
 
@@ -79,10 +86,7 @@ rescue_data[abc] <- lapply(rescue_data[abc], as.factor)
 
 
 ### ADOPTED VS NOT ADOPTED
-
-
 ```{r}
-
 shelter_data$Animal.Type <- 
   fct_collapse(shelter_data$Animal.Type, 
                Other = c("GUINEA PIG", "LIVESTOCK", 
@@ -153,15 +157,17 @@ shelter_data$Outcome.Type <-
 
 ```
 
-
-```{r}
+#### Tabling Each Variable
+```{r collapse=TRUE}
 table(shelter_data$Animal.Type) # bird, cat, dog, other
 table(shelter_data$Primary.Color) # black, brown/tan, gray/white, orange, other
 table(shelter_data$Sex) # male, female, neutered, spayed, unknown
+table(rescue_data$Age) # from -8 to 54
 table(shelter_data$Intake.Condition) # normal, injured/ill, behavior, other
 table(shelter_data$Intake.Type) # owner surrender, stray, wildlife, other
 table(shelter_data$Jurisdiction) # LA, Long Beach, Orange County, Other
 table(shelter_data$Outcome.Type) # adopted/rescued, not adopted
+# table(rescue_data$days_in_shelter) # from 0 to 730
 ```
 
 ### RESCUE VS NOT ADOPTED
@@ -235,23 +241,38 @@ rescue_data$Outcome.Type <-
 
 ```
 
-```{r}
+#### Tabling Each Variable
+```{r collapse=TRUE}
 table(rescue_data$Animal.Type) # bird, cat, dog, other
 table(rescue_data$Primary.Color) # black, brown/tan, gray/white, orange, other
 table(rescue_data$Sex) # male, female, neutered, spayed, unknown
+table(rescue_data$Age) # from -8 to 54
 table(rescue_data$Intake.Condition) # normal, injured/ill, behavior, other
 table(rescue_data$Intake.Type) # owner surrender, stray, wildlife, other
 table(rescue_data$Jurisdiction) # LA, Long Beach, Orange County, Other
 table(rescue_data$Outcome.Type) # adopted/rescued, not adopted
+# table(rescue_data$days_in_shelter) # from 0 to 730
 ```
 
 
-# drop 
-rescued vs not adopted
-select if shelter outcome is adopted
+## Exploratory Data Analysis
 
 ```{r}
-shelter_data2 <-shelter_data[,-c(5,8)]
+
+```
+
+
+## Methods
+
+Using KNN and decision trees
+
+Advantages of using KNN
+- easy to interpret and naturally handles multiclass datasets 
+- non-parametric
+
+### KNN
+```{r}
+shelter_data2 <-shelter_data
 
 normalize <- function(x){
  (x - min(x)) / (max(x) - min(x))
@@ -270,19 +291,8 @@ shelter_data2 <- one_hot(as.data.table(shelter_data2),cols=ab_c,sparsifyNAs = TR
 shelter_data2 <- shelter_data2[,-29]
 ```
 
-## Methods
-
-Using KNN and decision trees
-
-Advantages of using KNN
-- easy to interpret and naturally handles multiclass datasets 
-- non-parametric
-
-```{r}
-# Running kNN algorithm 
-table(shelter_data2$Outcome.Type_Adopted_Rescued)[2]/sum(shelter_data2$Outcome.Type_Adopted_Rescued)
-# at random, we have an 100% of correctly picking if a dog is adopted (???????)
-
+```{r collapse=TRUE}
+# Train Tune Test split at 60/20/20
 part_index_1 <- createDataPartition(shelter_data2$Outcome.Type_Adopted_Rescued,
                                            times=1,
                                            p = 0.60,
@@ -303,18 +313,11 @@ test <- tune_and_test[-tune_and_test_index, ]
 dim(train)
 dim(tune)
 dim(test)
-
-sum(is.na(shelter_data))
-sum(is.na(shelter_data2))
-sum(is.na(train))
-sum(is.na(tune))
-sum(is.na(test))
-
-
 ```
 
-### KNN
-```{r}
+
+```{r results='hide'}
+# Running kNN algorithm 
 # training the classifier for k = 9 
 
 set.seed(1984) # for randomized algorithm
@@ -328,11 +331,6 @@ shelter_9NN <- knn(train = train,#<- training set cases
 str(shelter_9NN)
 table(shelter_9NN)
 table(tune$Outcome.Type_Adopted_Rescued)
-
-# shelter_9NN # output
-
-View(as.tibble(shelter_9NN))
-View(as.tibble(attr(shelter_9NN,"prob")))
 ```
 
 ```{r}
@@ -360,15 +358,13 @@ confusionMatrix(as.factor(shelter_9NN), as.factor(tune$Outcome.Type_Adopted_Resc
 
 ### Decision Tree - Adoption
 ```{r}
-shelter_data <- shelter_data[,-c(5,8)]
-
 prevalence <- 1-table(shelter_data$Outcome.Type)[[2]]/length(shelter_data$Outcome.Type)  # calculate the proportion of salary that is the positive class 
 prevalence
 ```
 
-The prevalence is the proportion of the positive class within the target variable, in this case, the pets that are adopted from the shelter.  In this data set, the prevalence is roughly 59%.  This means that roughly 41% of the data is the negative class, or pets that are not adopted.  This metric can be used a baseline because a model that always predicts the negative class will be correct 41% of the time.  
+The prevalence is the proportion of the positive class within the target variable, in this case, the pets that are adopted from the shelter.  In this data set, the prevalence is roughly 17%.  This means that roughly 83% of the data is the negative class, or pets that are not adopted.  This metric can be used a baseline because a model that always predicts the negative class will be correct about 83% of the time at random.
 
-```{r}
+```{r collapse=TRUE}
 set.seed(1)
 part_index_1 <- caret::createDataPartition(shelter_data$Outcome.Type,  # split the data with a .7 probability so that 70% of the data is chosen
                                            times=1,
@@ -421,7 +417,7 @@ plot(shelter_mdl)
 varImp(shelter_mdl)
 ```
 
-Variables with greatest importance are age, intake condition, animal type, intake type, and sex.
+Variables with greatest importance are days in the shelter, sex, age, the intake condition, and the type of animal.
 
 ```{r}
 rpart.plot(shelter_mdl$finalModel, type=4,extra=101)
@@ -430,13 +426,11 @@ shelter_mdl$results
 
 ### Decision Tree - Rescue
 ```{r}
-rescue_data <- rescue_data[,-c(5,8)]
-
 prevalence <- 1-table(rescue_data$Outcome.Type)[[1]]/length(rescue_data$Outcome.Type)  
 prevalence
 ```
 
-```{r}
+```{r collapse=TRUE}
 set.seed(1)
 part_index_1 <- caret::createDataPartition(rescue_data$Outcome.Type,  # split the data with a .7 probability so that 70% of the data is chosen
                                            times=1,
@@ -498,11 +492,15 @@ rescue_mdl$results
 
 In this analysis we studied the factors that impacted adoption using data from adoption shelters in Long Beach, California. Our results show that the animals that are adopted tend to be younger, owner-surrendered (as opposed to strays), and of the cat/dog variety (as opposed to a range of wildlife animals included in the database). Wildlife, older animals and those who come in with behavioral issues and illness/injuries are not adopted as often. 
 
+<img src="puppy.jpg" alt="Puppy Picture" width="200" height="150">
+
 
 ## Conclusion
 
 Shelters should focus on promoting animals in their shelters that are typically older 
 Our main priority for this exploration is to see which factors contribute the most to an animal not being adopted in order to use this data to promote more instances of adoptions in shelters. This can be done through the shelter marketing older animals that are typically strays and with health issues more frequently. But a select quota of pets that hold a bunch of these "unadoptable" characteristics  may continue to not be adopted at all despite a higher amount of promotion. However, there are different ways to handle these animals without them going to a home. Other opportunities for these animals lie in rescues, animal sanctuaries, and more. By doing this, it can help human society in a different way by people coming through and visiting and also through providing the opportunity to help these animals have better lives through volunteer work as well.
+
+<img src="old_dog.jpg" alt="Old Dog Picture" width="474" height="237">
 
 ## Future work
   One way that this study could be adapted in future work could be through applying different databases in different areas of the world to learn if/how adoption trends change in different places and in different cultures. Databases with more quantitative variables than the one we used from the Long Beach area would be especially useful, as we wanted to try clustering in our data analysis but didn't have enough quantitative variables (i.e. weight) to do so. One reason to try clustering is because of the possibility of over-fitting with kNN analysis, which we experienced a bit throughout the  process.
