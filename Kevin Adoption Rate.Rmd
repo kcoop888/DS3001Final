@@ -485,7 +485,7 @@ rescue_mdl <- train(x=features,
 
 rescue_mdl
 
-plot(rescue_mdl)
+# plot(rescue_mdl)
 varImp(rescue_mdl)
 ```
 

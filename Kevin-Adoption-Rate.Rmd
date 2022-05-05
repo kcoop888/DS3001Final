@@ -46,6 +46,9 @@ library(knitr)
 
 How might we promote happiness with pet ownership? What factors impact the adoption of a pet, and likewise, what factors influence an animal not getting adopted?
 
+<img src="adopt_me.jpg" alt="Adopt Me Picture" width="450" height="256">
+
+
 ## Background Information
 
 Pets have been proven to affect human happiness and mental health positively. By exploring adoption rates of pets, we hope to find ways to promote happiness with pet ownership and discover what characteristics of an animal (age, color, intake condition, etc.) affect whether it'll be adopted. We are using animal shelter data from Long Beach, California.
@@ -55,7 +58,7 @@ Pets have been proven to affect human happiness and mental health positively. By
 ```{r eval=TRUE,echo=TRUE, fig.height=2}
 shelter_data <- read.csv("C:/Users/kcoop/Desktop/CS/Data Science/3001/DS3001Final/animal-shelter-intakes-and-outcomes.csv")
 column_index <- tibble(colnames(shelter_data))
-str(shelter_data)
+summary(shelter_data)
 
 
 mice::md.pattern(shelter_data)
@@ -67,7 +70,7 @@ shelter_data$days_in_shelter <- as.numeric(difftime(shelter_data$Outcome.Date, s
 
 shelter_data <-shelter_data[,-c(5,8)]
 
-str(shelter_data)
+# str(shelter_data)
 
 mice::md.pattern(shelter_data)
 
@@ -147,7 +150,7 @@ shelter_data$Jurisdiction <-
 
 shelter_data$Outcome.Type <- 
   fct_collapse(shelter_data$Outcome.Type, 
-               Adopted_Rescued = c("ADOPTION", "FOSTER TO ADOPT"),
+               Adopted = c("ADOPTION", "FOSTER TO ADOPT"),
                Not_Adopted = c("COMMUNITY CAT", "DIED", "DISPOSAL", "DUPLICATE",
                                "EUTHANASIA", "FOSTER", "MISSING", 
                                "RETURN TO OWNER", "RETURN TO RESCUE", 
@@ -258,6 +261,8 @@ table(rescue_data$Outcome.Type) # adopted/rescued, not adopted
 ## Exploratory Data Analysis
 
 ```{r}
+summary(shelter_data)
+summary(rescue_data)
 
 ```
 
@@ -271,7 +276,7 @@ Advantages of using KNN
 - non-parametric
 
 ### KNN
-```{r}
+```{r echo=FALSE}
 shelter_data2 <-shelter_data
 
 normalize <- function(x){
@@ -283,7 +288,7 @@ abc <- names(select_if(shelter_data2, is.numeric))
 shelter_data2[abc] <- lapply(shelter_data2[abc], normalize)
 ```
 
-```{r}
+```{r echo=FALSE}
 # one hot encoding
 ab_c <- names(select_if(shelter_data2, is.factor))
 shelter_data2 <- one_hot(as.data.table(shelter_data2),cols=ab_c,sparsifyNAs = TRUE,naCols = FALSE,dropCols = TRUE,dropUnusedLevels = TRUE)
@@ -291,9 +296,9 @@ shelter_data2 <- one_hot(as.data.table(shelter_data2),cols=ab_c,sparsifyNAs = TR
 shelter_data2 <- shelter_data2[,-29]
 ```
 
-```{r collapse=TRUE}
+```{r echo=FALSE}
 # Train Tune Test split at 60/20/20
-part_index_1 <- createDataPartition(shelter_data2$Outcome.Type_Adopted_Rescued,
+part_index_1 <- createDataPartition(shelter_data2$Outcome.Type_Adopted,
                                            times=1,
                                            p = 0.60,
                                            groups=1,
@@ -302,14 +307,16 @@ part_index_1 <- createDataPartition(shelter_data2$Outcome.Type_Adopted_Rescued,
 train <- shelter_data2[part_index_1,]
 tune_and_test <- shelter_data2[-part_index_1, ]
 
-tune_and_test_index <- createDataPartition(tune_and_test$Outcome.Type_Adopted_Rescued,
+tune_and_test_index <- createDataPartition(tune_and_test$Outcome.Type_Adopted,
                                            p = .5,
                                            list = FALSE,
                                            times = 1)
 
 tune <- tune_and_test[tune_and_test_index, ]
 test <- tune_and_test[-tune_and_test_index, ]
+```
 
+```{r collapse=TRUE}
 dim(train)
 dim(tune)
 dim(test)
@@ -323,21 +330,21 @@ dim(test)
 set.seed(1984) # for randomized algorithm
 shelter_9NN <- knn(train = train,#<- training set cases
                test = tune,    #<- tune set cases
-               cl = train$Outcome.Type_Adopted_Rescued,#<- category for true classification
+               cl = train$Outcome.Type_Adopted,#<- category for true classification
                k = 9,#<- number of neighbors considered
                use.all = TRUE,
                prob = TRUE)# provides the output in probabilities 
 
 str(shelter_9NN)
 table(shelter_9NN)
-table(tune$Outcome.Type_Adopted_Rescued)
+table(tune$Outcome.Type_Adopted)
 ```
 
 ```{r}
 # looking at how the kNN classification compares to the true class using the confusion matrix
 
 kNN_res = table(shelter_9NN,
-                tune$Outcome.Type_Adopted_Rescued)
+                tune$Outcome.Type_Adopted)
 kNN_res
 sum(kNN_res)  #<- the total is all the test examples
 
@@ -350,7 +357,7 @@ kNN_acc
 
 # an 100% accuracy rate... find base rate to see the chance of guessing right if we don't know anything about the pet being adopted
 
-confusionMatrix(as.factor(shelter_9NN), as.factor(tune$Outcome.Type_Adopted_Rescued), positive = "1", dnn=c("Prediction", "Actual"), mode = "sens_spec")
+confusionMatrix(as.factor(shelter_9NN), as.factor(tune$Outcome.Type_Adopted), positive = "1", dnn=c("Prediction", "Actual"), mode = "sens_spec")
 
 #sensitivity, recall and true poss rate = TP/TP+FN
 #specificity, true negative rate = TN/TN+FP
@@ -364,7 +371,8 @@ prevalence
 
 The prevalence is the proportion of the positive class within the target variable, in this case, the pets that are adopted from the shelter.  In this data set, the prevalence is roughly 17%.  This means that roughly 83% of the data is the negative class, or pets that are not adopted.  This metric can be used a baseline because a model that always predicts the negative class will be correct about 83% of the time at random.
 
-```{r collapse=TRUE}
+```{r echo=FALSE}
+
 set.seed(1)
 part_index_1 <- caret::createDataPartition(shelter_data$Outcome.Type,  # split the data with a .7 probability so that 70% of the data is chosen
                                            times=1,
@@ -383,7 +391,9 @@ tune_and_test_index <- createDataPartition(tune_and_test$Outcome.Type,  # now sp
 
 tune <- tune_and_test[tune_and_test_index, ]  # subset the 50% chosen into the tune set
 test <- tune_and_test[-tune_and_test_index, ]  # subset the remaining 50% into the test set
+```
 
+```{r collapse=TRUE}
 dim(train)
 dim(tune)
 dim(test)
@@ -419,10 +429,23 @@ varImp(shelter_mdl)
 
 Variables with greatest importance are days in the shelter, sex, age, the intake condition, and the type of animal.
 
+```{r echo=FALSE}
+predictandCM<- function(model,data,modeltype,ref)
+{
+  #model using, data going into the model, and output type for predict function
+  pred <-predict(model,data,type=modeltype)
+  confusionMatrix(pred, reference=ref, positive = 'Adopted')
+}
+```
+
 ```{r}
+predictandCM(shelter_mdl,tune,"raw",tune$Outcome.Type)
+
 rpart.plot(shelter_mdl$finalModel, type=4,extra=101)
 shelter_mdl$results
+
 ```
+
 
 ### Decision Tree - Rescue
 ```{r}
@@ -430,7 +453,7 @@ prevalence <- 1-table(rescue_data$Outcome.Type)[[1]]/length(rescue_data$Outcome.
 prevalence
 ```
 
-```{r collapse=TRUE}
+```{r echo=FALSE}
 set.seed(1)
 part_index_1 <- caret::createDataPartition(rescue_data$Outcome.Type,  # split the data with a .7 probability so that 70% of the data is chosen
                                            times=1,
@@ -449,7 +472,9 @@ tune_and_test_index <- createDataPartition(tune_and_test$Outcome.Type,  # now sp
 
 tune <- tune_and_test[tune_and_test_index, ]  # subset the 50% chosen into the tune set
 test <- tune_and_test[-tune_and_test_index, ]  # subset the remaining 50% into the test set
+```
 
+```{r collapse=TRUE}
 dim(train)
 dim(tune)
 dim(test)
@@ -479,14 +504,28 @@ rescue_mdl <- train(x=features,
 
 rescue_mdl
 
-plot(rescue_mdl)
+# plot(rescue_mdl)
 varImp(rescue_mdl)
 ```
 
+```{r echo=FALSE}
+predictandCM<- function(model,data,modeltype,ref)
+{
+  #model using, data going into the model, and output type for predict function
+  pred <-predict(model,data,type=modeltype)
+  confusionMatrix(pred, reference=ref, positive = 'Rescued')
+}
+```
+
 ```{r}
+predictandCM(rescue_mdl,tune,"raw",tune$Outcome.Type)
+
 rpart.plot(rescue_mdl$finalModel, type=4,extra=101)
 rescue_mdl$results
 ```
+## Fairness Assessment
+
+There are not protected classes because the data is on pets.
 
 ## Evaluation of our model
 
